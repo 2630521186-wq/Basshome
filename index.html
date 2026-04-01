@@ -1,13 +1,404 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>kaydex-homepage</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>思想流派测试</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    /* ===========================
+       荷兰风格派（蒙德里安）
+       红黄蓝 + 黑粗线 + 几何方块
+    ============================ */
+    body {
+      font-family: 'Helvetica Neue', 'Roboto', sans-serif;
+      background: #f9f9f9;
+      color: #111;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: 30px auto;
+    }
+
+    .card {
+      background: #fff;
+      border: 3px solid #000;
+      padding: 40px 32px;
+      position: relative;
+    }
+
+    /* 蒙德里安色块装饰 */
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 20px;
+      height: 20px;
+      background: #d12a36;
+    }
+    .card::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 60px;
+      height: 6px;
+      background: #2358a8;
+    }
+
+    .title {
+      font-size: 26px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      margin-bottom: 30px;
+      border-bottom: 3px solid #000;
+      padding-bottom: 12px;
+    }
+
+    .progress {
+      font-size: 14px;
+      color: #333;
+      margin-bottom: 24px;
+    }
+
+    .question {
+      font-size: 19px;
+      line-height: 1.6;
+      margin-bottom: 28px;
+      font-weight: 500;
+    }
+
+    .options {
+      margin-bottom: 40px;
+    }
+
+    .option {
+      border: 2px solid #000;
+      padding: 16px 20px;
+      margin-bottom: 12px;
+      font-size: 16px;
+      cursor: pointer;
+      background: #fff;
+    }
+
+    .option.selected {
+      background: #ffd500;
+      font-weight: 500;
+    }
+
+    /* 导航按钮：上一题 / 下一题 */
+    .nav {
+      display: flex;
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .nav button {
+      flex: 1;
+      padding: 16px;
+      font-size: 16px;
+      font-weight: bold;
+      border: 2px solid #000;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    .nav .next {
+      background: #2358a8;
+      color: #fff;
+    }
+
+    .nav .prev {
+      background: #eee;
+    }
+
+    /* 结果页 */
+    .result {
+      display: none;
+    }
+
+    .result-title {
+      font-size: 24px;
+      font-weight: 900;
+      border-bottom: 3px solid #000;
+      padding-bottom: 12px;
+      margin-bottom: 24px;
+    }
+
+    .bar-box {
+      margin-bottom: 14px;
+    }
+
+    .bar-title {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 500;
+      margin-bottom: 6px;
+    }
+
+    .bar {
+      width: 100%;
+      height: 8px;
+      background: #eee;
+      border: 1px solid #000;
+    }
+
+    .bar-fill {
+      height: 100%;
+      background: #d12a36;
+    }
+
+    .analysis {
+      margin-top: 36px;
+      line-height: 1.8;
+      font-size: 16px;
+      border-left: 4px solid #000;
+      padding-left: 16px;
+    }
+
+    .restart {
+      margin-top: 36px;
+      padding: 16px;
+      background: #ffd500;
+      border: 2px solid #000;
+      font-weight: 700;
+      font-size: 16px;
+      cursor: pointer;
+      width: 100%;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="title">思想流派测试</div>
+
+      <div id="quiz">
+        <div class="progress" id="progress"></div>
+        <div class="question" id="question"></div>
+        <div class="options" id="options"></div>
+
+        <div class="nav">
+          <button class="prev" id="prevBtn">上一题</button>
+          <button class="next" id="nextBtn">下一题</button>
+        </div>
+      </div>
+
+      <div class="result" id="result">
+        <div class="result-title">你的思想构成</div>
+        <div id="bars"></div>
+        <div class="analysis" id="analysis"></div>
+        <button class="restart" onclick="restart()">重新测试</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 题目
+    const questions = [
+      {
+        q: "假如人类永远无法抵达终极真理，你认为？",
+        opts: [
+          { t: "无所谓，过程催生智慧，行动改变世界最重要", type: "D" },
+          { t: "仍值得追求，可不断逼近自然规律", type: "C" },
+          { t: "有价值，能净化内心、解脱烦恼", type: "B" },
+          { t: "仍要信仰，信仰本身就是意义", type: "A" }
+        ]
+      },
+      {
+        q: "知识与思考最终目的是？",
+        opts: [
+          { t: "理解世界本源，顺应自然", type: "C" },
+          { t: "指导实践，让世界更美好", type: "D" },
+          { t: "观照内心，达到觉醒", type: "B" },
+          { t: "认识神，顺服神圣安排", type: "A" }
+        ]
+      },
+      {
+        q: "世界是否有主宰者？",
+        opts: [
+          { t: "无主宰，自然演化", type: "D" },
+          { t: "可能有初始推动者，之后不干预", type: "C" },
+          { t: "世界由心与业力构成", type: "B" },
+          { t: "神创造并掌管一切", type: "A" }
+        ]
+      },
+      {
+        q: "你如何看待欲望？",
+        opts: [
+          { t: "欲望是动力，用于创造与改造世界", type: "D" },
+          { t: "欲望是自然部分，应节制", type: "C" },
+          { t: "欲望是痛苦根源，应放下", type: "B" },
+          { t: "欲望是诱惑，应服从神圣", type: "A" }
+        ]
+      },
+      {
+        q: "哲学与神学的关系？",
+        opts: [
+          { t: "两者都是工具，能改善现实更有价值", type: "D" },
+          { t: "神学用神解释，哲学用理性", type: "C" },
+          { t: "神学最高，哲学为神学服务", type: "A" },
+          { t: "路径不同：神学求神，哲学求心", type: "B" }
+        ]
+      },
+      {
+        q: "终极真理是什么？",
+        opts: [
+          { t: "过程比终极真理更重要", type: "D" },
+          { t: "自然固有规律，客观存在", type: "C" },
+          { t: "神的意志，只能信仰", type: "A" },
+          { t: "超越语言，只能内证", type: "B" }
+        ]
+      },
+      {
+        q: "文明进步动力来自？",
+        opts: [
+          { t: "实践、思想碰撞、解决问题", type: "D" },
+          { t: "对自然规律的体悟", type: "C" },
+          { t: "内心觉悟与灵性提升", type: "B" },
+          { t: "信仰与神圣启示", type: "A" }
+        ]
+      },
+      {
+        q: "探索真理的价值是？",
+        opts: [
+          { t: "产生思想，改造现实", type: "D" },
+          { t: "贴近世界本来秩序", type: "C" },
+          { t: "破除执念，明心见性", type: "B" },
+          { t: "接近神，坚定信仰", type: "A" }
+        ]
+      }
+    ];
+
+    // 配置
+    const names = {
+      A: "启示信仰型",
+      B: "心性觉悟型",
+      C: "自然理性型",
+      D: "实践务实型"
+    };
+
+    const analysisText = {
+      A: "你以信仰为认知基石，相信宇宙存在神圣秩序与终极意义，重视道德、心灵归宿与精神信仰，理性为信仰服务，追求安定、崇高与永恒价值。",
+      B: "你是向内探索的修行者，认为世界的真相源于内心，不依赖外在权威，重视觉知、放下执念，追求心灵自由、平静与内在觉醒。",
+      C: "你相信宇宙存在客观规律，崇尚理性、自然与秩序，不迷信超自然干预，强调顺应规律、温和思辨、与自然和谐共生。",
+      D: "你是典型的行动派与实践主义者，不执着抽象终极真理，重视过程、行动与现实改变，相信知识用于解决问题，目标是创造更美好的现实世界。"
+    };
+
+    // 状态
+    let current = 0;
+    let answers = Array(questions.length).fill(null); // 记录每题选择
+    let ansCount = { A: 0, B: 0, C: 0, D: 0 };
+
+    // 渲染题目
+    function render() {
+      const q = questions[current];
+      document.getElementById("progress").innerText = `第 ${current + 1}/${questions.length} 题`;
+      document.getElementById("question").innerText = q.q;
+      const optEl = document.getElementById("options");
+      optEl.innerHTML = "";
+
+      q.opts.forEach((item, idx) => {
+        let div = document.createElement("div");
+        div.className = "option";
+        if (answers[current] === item.type) div.classList.add("selected");
+        div.innerText = item.t;
+        div.onclick = () => {
+          answers[current] = item.type;
+          render();
+        };
+        optEl.appendChild(div);
+      });
+    }
+
+    // 下一题
+    document.getElementById("nextBtn").onclick = () => {
+      if (!answers[current]) {
+        alert("请选择一个选项");
+        return;
+      }
+      if (current < questions.length - 1) {
+        current++;
+        render();
+      } else {
+        calcResult();
+      }
+    };
+
+    // 上一题
+    document.getElementById("prevBtn").onclick = () => {
+      if (current > 0) {
+        current--;
+        render();
+      }
+    };
+
+    // 计算结果
+    function calcResult() {
+      ansCount = { A: 0, B: 0, C: 0, D: 0 };
+      answers.forEach(t => { if (t) ansCount[t]++ });
+      const total = questions.length;
+
+      const res = {
+        A: ((ansCount.A / total) * 100).toFixed(0),
+        B: ((ansCount.B / total) * 100).toFixed(0),
+        C: ((ansCount.C / total) * 100).toFixed(0),
+        D: ((ansCount.D / total) * 100).toFixed(0)
+      };
+
+      // 绘制柱状图
+      let bars = "";
+      ["A", "B", "C", "D"].forEach(t => {
+        bars += `
+        <div class="bar-box">
+          <div class="bar-title">
+            <span>${names[t]}</span>
+            <span>${res[t]}%</span>
+          </div>
+          <div class="bar"><div class="bar-fill" style="width:${res[t]}%"></div></div>
+        </div>`;
+      });
+      document.getElementById("bars").innerHTML = bars;
+
+      // 排序
+      const top = Object.entries(res).sort((a, b) => b[1] - a[1]);
+      let text = `你的主导思想是【${names[top[0][0]]}】（${top[0][1]}%）。${analysisText[top[0][0]]}`;
+
+      if (top[1][1] >= 15) {
+        text += `\n\n同时你具备明显的【${names[top[1][0]]}】特质（${top[1][1]}%）。${analysisText[top[1][0]]}`;
+      }
+      if (top[2][1] >= 10) {
+        text += `\n\n你还带有【${names[top[2][0]]}】倾向（${top[2][1]}%），让思想更具层次与包容性。`;
+      }
+
+      text += `\n\n整体而言，你是多种思想融合的独立思考者，无法被单一标签定义。`;
+      document.getElementById("analysis").innerText = text;
+
+      document.getElementById("quiz").style.display = "none";
+      document.getElementById("result").style.display = "block";
+    }
+
+    // 重置
+    function restart() {
+      current = 0;
+      answers = Array(questions.length).fill(null);
+      ansCount = { A: 0, B: 0, C: 0, D: 0 };
+      document.getElementById("result").style.display = "none";
+      document.getElementById("quiz").style.display = "block";
+      render();
+    }
+
+    // 初始化
+    render();
+  </script>
+</body>
 </html>
